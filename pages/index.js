@@ -803,33 +803,33 @@ function BottomNav({ tab, onTab }) {
 // Main App
 // ─────────────────────────────────────────
 export default function App() {
-  // localStorage helpers
+  // localStorage helpers（クライアントサイドのみ）
   const load = (key, fallback) => {
-    if (typeof window === "undefined") return fallback;
     try {
       const v = localStorage.getItem("daratask_" + key);
       if (v === null) return fallback;
       return JSON.parse(v);
     } catch { return fallback; }
   };
-  const savedDate = load("lastDate", null);
-  const isNewDay = savedDate !== todayKey();
 
-  const [nickname, setNickname] = useState(() => load("nickname", "だら"));
+  // ─── ステート（全てデフォルト値で初期化、マウント後にlocalStorageから読込）
+  const [loaded, setLoaded] = useState(false);
+
+  const [nickname, setNickname] = useState("だら");
   const [tab, setTab] = useState("home");
-  const [tasks, setTasks] = useState(() => load("tasks", []));
+  const [tasks, setTasks] = useState([]);
   const [input, setInput] = useState("");
   const [parsing, setParsing] = useState(false);
   const [newIds, setNewIds] = useState([]);
   const [showDone, setShowDone] = useState(false);
 
-  const [points, setPoints] = useState(() => load("points", 0));
-  const [totalPoints, setTotalPoints] = useState(() => load("totalPoints", 0));
-  const [totalTasks, setTotalTasks] = useState(() => load("totalTasks", 0));
-  const [streak, setStreak] = useState(() => load("streak", 1));
-  const [completedToday, setCompletedToday] = useState(() => isNewDay ? 0 : load("completedToday", 0));
-  const [bonusPaidToday, setBonusPaidToday] = useState(() => isNewDay ? false : load("bonusPaidToday", false));
-  const [achievedDates, setAchievedDates] = useState(() => new Set(load("achievedDates", [])));
+  const [points, setPoints] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [streak, setStreak] = useState(1);
+  const [completedToday, setCompletedToday] = useState(0);
+  const [bonusPaidToday, setBonusPaidToday] = useState(false);
+  const [achievedDates, setAchievedDates] = useState(new Set());
 
   const [showBonus, setShowBonus] = useState(false);
   const [bonusAmt, setBonusAmt] = useState(0);
@@ -847,31 +847,52 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks.length]);
 
-  const [ownedPets, setOwnedPets] = useState(() => load("ownedPets", ["bear"]));
-  const [activePet, setActivePet] = useState(() => load("activePet", "bear"));
-  const [hasOmamori, setHasOmamori] = useState(() => load("hasOmamori", true));
+  const [ownedPets, setOwnedPets] = useState(["bear"]);
+  const [activePet, setActivePet] = useState("bear");
+  const [hasOmamori, setHasOmamori] = useState(true);
 
-  const [earnedBadges, setEarnedBadges] = useState(() => load("earnedBadges", []));
+  const [earnedBadges, setEarnedBadges] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
   const [notifOn, setNotifOn] = useState(true);
   const [planTime, setPlanTime] = useState("09:00");
 
-  // localStorage save effects
-  useEffect(() => { localStorage.setItem("daratask_nickname",      JSON.stringify(nickname));      }, [nickname]);
-  useEffect(() => { localStorage.setItem("daratask_tasks",         JSON.stringify(tasks));         }, [tasks]);
-  useEffect(() => { localStorage.setItem("daratask_points",        JSON.stringify(points));        }, [points]);
-  useEffect(() => { localStorage.setItem("daratask_totalPoints",   JSON.stringify(totalPoints));   }, [totalPoints]);
-  useEffect(() => { localStorage.setItem("daratask_totalTasks",    JSON.stringify(totalTasks));    }, [totalTasks]);
-  useEffect(() => { localStorage.setItem("daratask_streak",        JSON.stringify(streak));        }, [streak]);
-  useEffect(() => { localStorage.setItem("daratask_completedToday",JSON.stringify(completedToday));}, [completedToday]);
-  useEffect(() => { localStorage.setItem("daratask_bonusPaidToday",JSON.stringify(bonusPaidToday));}, [bonusPaidToday]);
-  useEffect(() => { localStorage.setItem("daratask_achievedDates", JSON.stringify([...achievedDates])); }, [achievedDates]);
-  useEffect(() => { localStorage.setItem("daratask_ownedPets",     JSON.stringify(ownedPets));     }, [ownedPets]);
-  useEffect(() => { localStorage.setItem("daratask_activePet",     JSON.stringify(activePet));     }, [activePet]);
-  useEffect(() => { localStorage.setItem("daratask_hasOmamori",    JSON.stringify(hasOmamori));    }, [hasOmamori]);
-  useEffect(() => { localStorage.setItem("daratask_earnedBadges",  JSON.stringify(earnedBadges));  }, [earnedBadges]);
-  useEffect(() => { localStorage.setItem("daratask_lastDate",      JSON.stringify(todayKey()));    }, []);
+  // ─── マウント後にlocalStorageから一括読込 ───────────────────
+  useEffect(() => {
+    const savedDate = load("lastDate", null);
+    const newDay = savedDate !== todayKey();
+    setNickname(load("nickname", "だら"));
+    setTasks(load("tasks", []));
+    setPoints(load("points", 0));
+    setTotalPoints(load("totalPoints", 0));
+    setTotalTasks(load("totalTasks", 0));
+    setStreak(load("streak", 1));
+    setCompletedToday(newDay ? 0 : load("completedToday", 0));
+    setBonusPaidToday(newDay ? false : load("bonusPaidToday", false));
+    setAchievedDates(new Set(load("achievedDates", [])));
+    setOwnedPets(load("ownedPets", ["bear"]));
+    setActivePet(load("activePet", "bear"));
+    setHasOmamori(load("hasOmamori", true));
+    setEarnedBadges(load("earnedBadges", []));
+    setLoaded(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── 変更時にlocalStorageへ保存（loaded後のみ）───────────────
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_nickname",       JSON.stringify(nickname));         }, [loaded, nickname]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_tasks",          JSON.stringify(tasks));            }, [loaded, tasks]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_points",         JSON.stringify(points));           }, [loaded, points]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_totalPoints",    JSON.stringify(totalPoints));      }, [loaded, totalPoints]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_totalTasks",     JSON.stringify(totalTasks));       }, [loaded, totalTasks]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_streak",         JSON.stringify(streak));           }, [loaded, streak]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_completedToday", JSON.stringify(completedToday));   }, [loaded, completedToday]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_bonusPaidToday", JSON.stringify(bonusPaidToday));   }, [loaded, bonusPaidToday]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_achievedDates",  JSON.stringify([...achievedDates]));}, [loaded, achievedDates]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_ownedPets",      JSON.stringify(ownedPets));        }, [loaded, ownedPets]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_activePet",      JSON.stringify(activePet));        }, [loaded, activePet]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_hasOmamori",     JSON.stringify(hasOmamori));       }, [loaded, hasOmamori]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_earnedBadges",   JSON.stringify(earnedBadges));     }, [loaded, earnedBadges]);
+  useEffect(() => { if (!loaded) return; localStorage.setItem("daratask_lastDate",       JSON.stringify(todayKey()));       }, [loaded]);
 
   const inputRef = useRef(null);
   const idleTimer = useRef(null);
