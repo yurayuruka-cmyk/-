@@ -22,16 +22,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
-      - run: npm run build
-        env:
-          NODE_ENV: production
+      - name: ファイルをoutフォルダにコピー
+        run: |
+          mkdir -p out
+          cp index.html out/
+          cp manifest.json out/
+          cp sw.js out/
+          cp -r vendor out/
+          cp -r public out/
 
       - uses: actions/configure-pages@v5
 

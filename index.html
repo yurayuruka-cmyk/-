@@ -4,14 +4,19 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
   <title>だらタスク</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet"/>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="manifest" href="./manifest.json"/>
+  <meta name="theme-color" content="#f97316"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+  <meta name="apple-mobile-web-app-title" content="だらタスク"/>
+  <link rel="apple-touch-icon" href="./public/darakumaup.jpeg"/>
+  <script src="./vendor/react.min.js"></script>
+  <script src="./vendor/react-dom.min.js"></script>
+  <script src="./vendor/babel.min.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{background:#faf7f2;font-family:'Noto Sans JP','Helvetica Neue',sans-serif;}
+    body{background:#faf7f2;font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;}
     @keyframes popIn{from{transform:scale(0.85);opacity:0}to{transform:scale(1);opacity:1}}
     @keyframes slideIn{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
     @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -19,9 +24,9 @@
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
     @keyframes badgeBounce{0%{transform:scale(0) rotate(-10deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0deg)}}
     .task-new{animation:slideIn 0.35s cubic-bezier(.22,1,.36,1) forwards;}
-    textarea{font-family:'Noto Sans JP','Helvetica Neue',sans-serif;}
-    button{font-family:'Noto Sans JP','Helvetica Neue',sans-serif;}
-    input{font-family:'Noto Sans JP','Helvetica Neue',sans-serif;}
+    textarea{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;}
+    button{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;}
+    input{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Meiryo',sans-serif;}
   </style>
 </head>
 <body>
@@ -69,7 +74,7 @@ function parseTasksFromText(text) {
 // データ定義
 // ─────────────────────────────────────────
 const PETS = [
-  { id:"bear",    emoji:"🐻", image:"./darakumaup.jpeg", name:"だらクマ",   cost:0,   desc:"最初からいる相棒" },
+  { id:"bear",    emoji:"🐻", image:"./public/darakumaup.jpeg", name:"だらクマ",   cost:0,   desc:"最初からいる相棒" },
   { id:"cat",     emoji:"🐱", name:"ねこ",       cost:300,  desc:"気まぐれだけど可愛い" },
   { id:"dog",     emoji:"🐶", name:"いぬ",       cost:400,  desc:"いつも応援してくれる" },
   { id:"rabbit",  emoji:"🐰", name:"うさぎ",     cost:500,  desc:"ぴょんぴょん元気" },
@@ -670,6 +675,10 @@ function BottomNav({ tab, onTab }) {
 // Main App
 // ─────────────────────────────────────────
 function App() {
+  // localStorage helpers
+  const load=(key,fallback)=>{try{const v=localStorage.getItem("daratask_"+key);if(v===null)return fallback;return JSON.parse(v);}catch{return fallback;}};
+
+  const [loaded,setLoaded]=useState(false);
   const [nickname,setNickname]=useState("だら");
   const [tab,setTab]=useState("home");
   const [tasks,setTasks]=useState([]);
@@ -701,6 +710,42 @@ function App() {
   const [planTime,setPlanTime]=useState("09:00");
   const inputRef=useRef(null);
   const idleTimer=useRef(null);
+
+  // マウント後にlocalStorageから読込
+  useEffect(()=>{
+    const savedDate=load("lastDate",null);
+    const newDay=savedDate!==todayKey();
+    setNickname(load("nickname","だら"));
+    setTasks(load("tasks",[]));
+    setPoints(load("points",0));
+    setTotalPoints(load("totalPoints",0));
+    setTotalTasks(load("totalTasks",0));
+    setStreak(load("streak",1));
+    setCompletedToday(newDay?0:load("completedToday",0));
+    setBonusPaidToday(newDay?false:load("bonusPaidToday",false));
+    setAchievedDates(new Set(load("achievedDates",[])));
+    setOwnedPets(load("ownedPets",["bear"]));
+    setActivePet(load("activePet","bear"));
+    setHasOmamori(load("hasOmamori",true));
+    setEarnedBadges(load("earnedBadges",[]));
+    setLoaded(true);
+  },[]);
+
+  // 変更時に保存（loaded後のみ）
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_nickname",JSON.stringify(nickname));},[loaded,nickname]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_tasks",JSON.stringify(tasks));},[loaded,tasks]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_points",JSON.stringify(points));},[loaded,points]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_totalPoints",JSON.stringify(totalPoints));},[loaded,totalPoints]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_totalTasks",JSON.stringify(totalTasks));},[loaded,totalTasks]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_streak",JSON.stringify(streak));},[loaded,streak]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_completedToday",JSON.stringify(completedToday));},[loaded,completedToday]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_bonusPaidToday",JSON.stringify(bonusPaidToday));},[loaded,bonusPaidToday]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_achievedDates",JSON.stringify([...achievedDates]));},[loaded,achievedDates]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_ownedPets",JSON.stringify(ownedPets));},[loaded,ownedPets]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_activePet",JSON.stringify(activePet));},[loaded,activePet]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_hasOmamori",JSON.stringify(hasOmamori));},[loaded,hasOmamori]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_earnedBadges",JSON.stringify(earnedBadges));},[loaded,earnedBadges]);
+  useEffect(()=>{if(!loaded)return;localStorage.setItem("daratask_lastDate",JSON.stringify(todayKey()));},[loaded]);
 
   useEffect(()=>{
     const reset=()=>{
@@ -781,7 +826,7 @@ function App() {
 
   const handleBuyPet=(pet)=>{ if(points<pet.cost||ownedPets.includes(pet.id))return; setPoints(p=>p-pet.cost); setOwnedPets(prev=>[...prev,pet.id]); setActivePet(pet.id); checkBadges({...stats,ownedPets:[...ownedPets,pet.id]}); };
   const handleBuyOmamori=()=>{ if(points<OMAMORI.cost||hasOmamori)return; setPoints(p=>p-OMAMORI.cost); setHasOmamori(true); checkBadges({...stats,hasOmamori:true}); };
-  const handleReset=()=>{ setTasks([]); setPoints(0); setTotalPoints(0); setTotalTasks(0); setStreak(1); setCompletedToday(0); setBonusPaidToday(false); setAchievedDates(new Set()); setOwnedPets(["bear"]); setActivePet("bear"); setHasOmamori(false); setEarnedBadges([]); setBadgeQueue([]); };
+  const handleReset=()=>{ ["nickname","tasks","points","totalPoints","totalTasks","streak","completedToday","bonusPaidToday","achievedDates","ownedPets","activePet","hasOmamori","earnedBadges","lastDate"].forEach(k=>localStorage.removeItem("daratask_"+k)); setTasks([]); setPoints(0); setTotalPoints(0); setTotalTasks(0); setStreak(1); setCompletedToday(0); setBonusPaidToday(false); setAchievedDates(new Set()); setOwnedPets(["bear"]); setActivePet("bear"); setHasOmamori(false); setEarnedBadges([]); setBadgeQueue([]); };
 
   const PanelWrap=({title,children})=>(
     <div style={{position:"fixed",inset:0,zIndex:400,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -914,6 +959,14 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err=>console.log('SW登録失敗:',err));
+  });
+}
 </script>
 </body>
 </html>

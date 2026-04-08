@@ -1,4 +1,4 @@
-const CACHE = 'daratask-v1';
+const CACHE = 'daratask-v3';
 const ASSETS = [
   './',
   './index.html',
